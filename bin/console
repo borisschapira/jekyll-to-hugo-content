@@ -1,0 +1,9 @@
+#!/usr/bin/env php
+<?php
+require_once __DIR__.'/../vendor/autoload.php';
+
+use ConsoleDI\Console\Application;
+
+$application = new Application('Say HI!', '1.0');
+
+$application->run();
