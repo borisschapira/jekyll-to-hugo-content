@@ -1,8 +1,10 @@
 {
     "require": {
         "symfony/console": "^3.1",
+        "symfony/finder": "^3.1",
         "symfony/dependency-injection": "^3.1",
-        "symfony/config": "^3.1"
+        "symfony/config": "^3.1",
+        "kzykhys/yaml-front-matter": ">=1.0"
     },
     "autoload": {
         "psr-4": {"ConsoleDI\\": "src/"}

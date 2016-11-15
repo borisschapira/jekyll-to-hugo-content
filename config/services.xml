@@ -11,7 +11,7 @@
             <tag name="console.command" />
         </service>
 
-        <service id="command.hi" class="ConsoleDI\Command\HiCommand">
+        <service id="command.blog-improve-front-matter" class="ConsoleDI\Command\BlogImproveFrontMatterCommand">
             <tag name="console.command" />
         </service>
     </services>
