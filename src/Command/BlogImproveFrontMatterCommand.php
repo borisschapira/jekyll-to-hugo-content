@@ -16,18 +16,21 @@ class BlogImproveFrontMatterCommand extends Command
     {
         $this
             ->setName('blog:improve-front-matter')
-            ->addArgument('path', InputArgument::REQUIRED, 'The path to the root folder of contents')
+            ->addArgument('src', InputArgument::REQUIRED, 'The path to the root folder of contents')
+            ->addArgument('dest', InputArgument::OPTIONAL, 'The path to the root folder of contents')
         ;
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)
     {
-        $path = $input->getArgument('path');
+        $src = $input->getArgument('src');
+        $destination = $input->getArgument('dest');
 
-        $re = '/.*\/*(?P<section>citoyen|papa|default)\/(?P<year>[0-9]+)\/\k<year>-(?P<month>[0-9]+)-(?P<day>[0-9]+)-(?P<title>.*)\/\k<year>-\k<month>-\k<day>-\k<title>.md/';
+
+        $re = '/(?P<lang>fr|en)\/(?P<section>citoyen|papa|default)\/(?P<year>[0-9]+)\/\k<year>-(?P<month>[0-9]+)-(?P<day>[0-9]+)-(?P<title>.*)\/\k<year>-\k<month>-\k<day>-\k<title>.md/';
 
         $finder = new Finder();
-        $finder->files()->in($path)->name('*.md');;
+        $finder->files()->in($src)->name('*.md');;
 
         /** @var SplFileInfo $file */
         foreach ($finder as $file) {
@@ -35,23 +38,38 @@ class BlogImproveFrontMatterCommand extends Command
             //$output->writeln($file->getRealPath());
 
             // Dump the relative path to the file, omitting the filename
-            $output->writeln($file->getRealPath());
+            $output->writeln('Source file: '.$file->getRealPath());
 
             // Dump the relative path to the file
-            preg_match_all($re, $file->getRelativePathname(), $matches);
+            preg_match($re, $file->getRelativePathname(), $matches);
 
-            if($matches) {
+            //var_dump($matches);
+
+            if(count($matches) > 10) {
+
                 $document = FrontMatter::parse(file_get_contents($file->getRealPath()));
 
-                /**$output->writeln($matches['section'][0] . ' ' . $matches['day'][0] .'/'.$matches['month'][0].'/'.$matches['year'][0]. ' '. $matches['title'][0]);**/
+                // $output->writeln($matches['section'] . ' ' . $matches['day'] .'/'.$matches['month'].'/'.$matches['year']. ' '. $matches['title']);
 
-                $document['date']= $matches['year'][0] .'-'.$matches['month'][0].'-'.$matches['day'][0];
-                $document['section']= $matches['section'][0];
-                $document['type']= "post";
+                $document['date']= $matches['year'] .'-'.$matches['month'].'-'.$matches['day'];
+                $document['section']= $matches['section'];
+                $document['lang']= $matches['lang'];
+                $document['type']= 'post';
 
-                file_put_contents($file->getRealPath(), FrontMatter::dump($document));
+                if($destination == null) {
+                    $output->writeln('Updating file.');
+                    file_put_contents($file->getRealPath(), FrontMatter::dump($document));
+                } else {
+                    $destinationPathTemplate = $destination.'/'.$matches['lang'].'/'.$matches['year'].'/'.$matches['month'].'/'.$matches['day'];
+
+                    //$output->writeln($destinationPathTemplate);
+                    $output->writeln('Writing file to: '.$destinationPathTemplate. '/' . $matches['title'].'.md');
+
+                    mkdir($destinationPathTemplate , 0777, true);
+                    file_put_contents($destinationPathTemplate. '/' . $matches['title'].'.md', FrontMatter::dump($document));
+                }
+                $output->writeln('');
             }
-            break;
         }
     }
 }
