@@ -17,8 +17,7 @@ class BlogImproveFrontMatterCommand extends Command
         $this
             ->setName('blog:improve-front-matter')
             ->addArgument('src', InputArgument::REQUIRED, 'The path to the root folder of contents')
-            ->addArgument('dest', InputArgument::OPTIONAL, 'The path to the root folder of contents')
-        ;
+            ->addArgument('dest', InputArgument::OPTIONAL, 'The path to the root folder of contents');
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)
@@ -34,39 +33,54 @@ class BlogImproveFrontMatterCommand extends Command
 
         /** @var SplFileInfo $file */
         foreach ($finder as $file) {
-            // Dump the absolute path
-            //$output->writeln($file->getRealPath());
-
-            // Dump the relative path to the file, omitting the filename
-            $output->writeln('Source file: '.$file->getRealPath());
 
             // Dump the relative path to the file
             preg_match($re, $file->getRelativePathname(), $matches);
 
             //var_dump($matches);
 
-            if(count($matches) > 10) {
+            if (count($matches) > 10) {
+
+                // Dump the relative path to the file, omitting the filename
+                $output->writeln('Source file: ' . $file->getRealPath());
 
                 $document = FrontMatter::parse(file_get_contents($file->getRealPath()));
 
                 // $output->writeln($matches['section'] . ' ' . $matches['day'] .'/'.$matches['month'].'/'.$matches['year']. ' '. $matches['title']);
 
-                $document['date']= $matches['year'] .'-'.$matches['month'].'-'.$matches['day'];
-                $document['section']= $matches['section'];
-                $document['lang']= $matches['lang'];
-                $document['type']= 'post';
+                $document['date'] = $matches['year'] . '-' . $matches['month'] . '-' . $matches['day'];
+                $document['section'] = $matches['section'];
+                $document['lang'] = $matches['lang'];
+                $document['type'] = 'post';
 
-                if($destination == null) {
+                if ($destination == null) {
                     $output->writeln('Updating file.');
                     file_put_contents($file->getRealPath(), FrontMatter::dump($document));
                 } else {
-                    $destinationPathTemplate = $destination.'/'.$matches['lang'].'/'.$matches['year'].'/'.$matches['month'].'/'.$matches['day'];
+                    $destinationPathTemplate = $destination . '/content/' . $matches['section'] . '/' . $matches['year'] . '/' . $matches['month']. '/' . $matches['title']. '/';
+
+                    $urlTemplate = ($matches['section']=='default'?'':('/' .$matches['section'])) . '/' . $matches['year'] . '/' . $matches['month']. '/' . $matches['title']. '/';
 
                     //$output->writeln($destinationPathTemplate);
-                    $output->writeln('Writing file to: '.$destinationPathTemplate. '/' . $matches['title'].'.md');
+                    $output->writeln('Writing file to: ' . $destinationPathTemplate . 'index.md');
 
-                    mkdir($destinationPathTemplate , 0777, true);
-                    file_put_contents($destinationPathTemplate. '/' . $matches['title'].'.md', FrontMatter::dump($document));
+                    if (!file_exists($destinationPathTemplate)) {
+                        mkdir($destinationPathTemplate, 0777, true);
+                    }
+
+                    $dump = FrontMatter::dump($document);
+                    $fixedDump = str_replace('{{ page.url }}', $urlTemplate, $dump);
+                    file_put_contents($destinationPathTemplate . 'index.md', $fixedDump);
+
+                    $insideFinder = new Finder();
+                    $insideFinder->files()->in($file->getPath())->notName('*.md');
+
+                    /** @var SplFileInfo $ressource */
+                    foreach ($insideFinder as $ressource) {
+                        $output->writeln('Additional ressource : ' . $ressource->getRealPath());
+                        copy($ressource->getRealPath(), $destinationPathTemplate . $ressource->getRelativePathname());
+                    }
+
                 }
                 $output->writeln('');
             }
