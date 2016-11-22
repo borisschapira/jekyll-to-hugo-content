@@ -2,6 +2,7 @@
 
 namespace ConsoleDI\Command;
 
+use KzykHys\FrontMatter\Document;
 use KzykHys\FrontMatter\FrontMatter;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputArgument;
@@ -44,6 +45,7 @@ class BlogImproveFrontMatterCommand extends Command
                 // Dump the relative path to the file, omitting the filename
                 $output->writeln('Source file: ' . $file->getRealPath());
 
+                /** @var Document $document */
                 $document = FrontMatter::parse(file_get_contents($file->getRealPath()));
 
                 // $output->writeln($matches['section'] . ' ' . $matches['day'] .'/'.$matches['month'].'/'.$matches['year']. ' '. $matches['title']);
@@ -52,17 +54,18 @@ class BlogImproveFrontMatterCommand extends Command
                 $document['section'] = $matches['section'];
                 $document['lang'] = $matches['lang'];
                 $document['type'] = 'post';
+                $document[$matches['year']] = [$matches['month']];
 
                 if ($destination == null) {
                     $output->writeln('Updating file.');
                     file_put_contents($file->getRealPath(), FrontMatter::dump($document));
                 } else {
-                    $destinationPathTemplate = $destination . '/content/' . $matches['section'] . '/' . $matches['year'] . '/' . $matches['month']. '/' . $matches['title']. '/';
+                    $destinationPathTemplate = $destination . '/content/' . $matches['section'] . '/' . $matches['year'] . '/' . $matches['month'] . '/' . $matches['title'] . '/';
 
-                    $urlTemplate = ($matches['section']=='default'?'':('/' .$matches['section'])) . '/' . $matches['year'] . '/' . $matches['month']. '/' . $matches['title']. '/';
+                    $urlTemplate = ($matches['section'] == 'default' ? '' : ('/' . $matches['section'])) . '/' . $matches['year'] . '/' . $matches['month'] . '/' . $matches['title'] . '/';
 
-                    //$output->writeln($destinationPathTemplate);
-                    $output->writeln('Writing file to: ' . $destinationPathTemplate . 'index.md');
+                    $filename = isset($document["i18n-key"]) ? $document["i18n-key"] : 'index';
+                    $output->writeln('Writing file to: ' . $destinationPathTemplate . $filename . '.' . $matches['lang'] . '.md');
 
                     if (!file_exists($destinationPathTemplate)) {
                         mkdir($destinationPathTemplate, 0777, true);
@@ -70,7 +73,7 @@ class BlogImproveFrontMatterCommand extends Command
 
                     $dump = FrontMatter::dump($document);
                     $fixedDump = str_replace('{{ page.url }}', $urlTemplate, $dump);
-                    file_put_contents($destinationPathTemplate . 'index.md', $fixedDump);
+                    file_put_contents($destinationPathTemplate . $filename . '.' . $matches['lang'] . '.md', $fixedDump);
 
                     $insideFinder = new Finder();
                     $insideFinder->files()->in($file->getPath())->notName('*.md');
