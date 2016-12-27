@@ -43,7 +43,7 @@ class BlogImproveFrontMatterCommand extends Command
             if (count($matches) > 10) {
 
                 // Dump the relative path to the file, omitting the filename
-                $output->writeln('Source file: ' . $file->getRealPath());
+                $output->writeln('Source file: ' . $file->getRealPath() . ' (' . $file->getBasename('.md') . ')');
 
                 /** @var Document $document */
                 $document = FrontMatter::parse(file_get_contents($file->getRealPath()));
@@ -51,18 +51,32 @@ class BlogImproveFrontMatterCommand extends Command
                 // $output->writeln($matches['section'] . ' ' . $matches['day'] .'/'.$matches['month'].'/'.$matches['year']. ' '. $matches['title']);
 
                 $document['date'] = $matches['year'] . '-' . $matches['month'] . '-' . $matches['day'];
-                $document['section'] = $matches['section'];
                 $document['lang'] = $matches['lang'];
                 $document['type'] = 'post';
-                $document[$matches['year']] = [$matches['month']];
+                $document['slug'] = substr($file->getBasename('.md'), 11);
+
+                if ($destination != null) {
+                    $document['section'] = $matches['section'];
+                    $document[$matches['year']] = [$matches['month']];
+                } else {
+                    $document->offsetUnset('section');
+
+                    if (!isset($document['categories'])) {
+                        $document['categories'] = array();
+                    }
+                    $categories = $document['categories'];
+                    $categories[] = $matches['section'];
+                    $document['categories'] = array_unique($categories);
+                }
 
                 if ($destination == null) {
                     $output->writeln('Updating file.');
                     file_put_contents($file->getRealPath(), FrontMatter::dump($document));
                 } else {
-                    $destinationPathTemplate = $destination . '/content/' . $matches['section'] . '/' . $matches['year'] . '/' . $matches['month'] . '/' . $matches['title'] . '/';
+                    $destinationPathTemplate = $destination . '/content/' . $matches['section'] . '/' . $matches['year'] . '/' . $matches['month'] . '/' . substr($file->getBasename('.md'), 11) . '/';
+                    $filesDestinationPathTemplate = $destination . '/static/files/' . $matches['year'] . '/' . $matches['month'] . '/' . substr($file->getBasename('.md'), 11) . '/';
 
-                    $urlTemplate = ($matches['section'] == 'default' ? '' : ('/' . $matches['section'])) . '/' . $matches['year'] . '/' . $matches['month'] . '/' . $matches['title'] . '/';
+                    $urlTemplate = ($matches['section'] == 'default' ? '' : ('/' . $matches['section'])) . '/' . $matches['year'] . '/' . $matches['month'] . '/' . substr($file->getBasename('.md'), 11) . '/';
 
                     $filename = isset($document["i18n-key"]) ? $document["i18n-key"] : 'index';
                     $output->writeln('Writing file to: ' . $destinationPathTemplate . $filename . '.' . $matches['lang'] . '.md');
@@ -72,16 +86,24 @@ class BlogImproveFrontMatterCommand extends Command
                     }
 
                     $dump = FrontMatter::dump($document);
-                    $fixedDump = str_replace('{{ page.url }}', $urlTemplate, $dump);
+                    $fixedDump = str_replace('{{ page.url }}', '{{<fileFolder>}}', $dump);
                     file_put_contents($destinationPathTemplate . $filename . '.' . $matches['lang'] . '.md', $fixedDump);
 
                     $insideFinder = new Finder();
                     $insideFinder->files()->in($file->getPath())->notName('*.md');
 
-                    /** @var SplFileInfo $ressource */
-                    foreach ($insideFinder as $ressource) {
-                        $output->writeln('Additional ressource : ' . $ressource->getRealPath());
-                        copy($ressource->getRealPath(), $destinationPathTemplate . $ressource->getRelativePathname());
+                    if (count($insideFinder)>0) {
+
+                        if (!file_exists($filesDestinationPathTemplate)) {
+                            mkdir($filesDestinationPathTemplate, 0777, true);
+                        }
+
+                        /** @var SplFileInfo $ressource */
+                        foreach ($insideFinder as $ressource) {
+                            $output->writeln('Additional ressource : ' . $ressource->getRealPath());
+                            copy($ressource->getRealPath(), $filesDestinationPathTemplate . $ressource->getRelativePathname());
+                            copy($ressource->getRealPath(), $destinationPathTemplate . $ressource->getRelativePathname());
+                        }
                     }
 
                 }
