@@ -53,9 +53,9 @@ class BlogImproveFrontMatterCommand extends Command
                 $document['date'] = $matches['year'] . '-' . $matches['month'] . '-' . $matches['day'];
                 $document['lang'] = $matches['lang'];
                 $document['type'] = 'post';
-                $document['slug'] = substr($file->getBasename('.md'), 11);
 
                 if ($destination != null) {
+                    $document['slug'] = substr($file->getBasename('.md'), 11);
                     $document['section'] = $matches['section'];
                     $document[$matches['year']] = [$matches['month']];
                 } else {
