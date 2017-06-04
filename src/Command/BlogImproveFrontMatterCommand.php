@@ -86,8 +86,9 @@ class BlogImproveFrontMatterCommand extends Command
                     }
 
                     $dump = FrontMatter::dump($document);
-                    $fixedDump = str_replace('{{ page.url }}', '{{<fileFolder>}}', $dump);
-                    file_put_contents($destinationPathTemplate . $filename . '.' . $matches['lang'] . '.md', $fixedDump);
+                    $dump = str_replace('{{ page.url }}', '{{<fileFolder>}}', $dump);
+                    $dump = str_replace('<!-- more -->', '<!--more-->', $dump);
+                    file_put_contents($destinationPathTemplate . $filename . '.' . $matches['lang'] . '.md', $dump);
 
                     $insideFinder = new Finder();
                     $insideFinder->files()->in($file->getPath())->notName('*.md');
