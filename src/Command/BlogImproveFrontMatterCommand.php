@@ -51,8 +51,14 @@ class BlogImproveFrontMatterCommand extends Command
                 // $output->writeln($matches['section'] . ' ' . $matches['day'] .'/'.$matches['month'].'/'.$matches['year']. ' '. $matches['title']);
 
                 $document['date'] = $matches['year'] . '-' . $matches['month'] . '-' . $matches['day'];
+                $document['publishDate'] = $document['date'];
                 $document['lang'] = $matches['lang'];
                 $document['type'] = 'post';
+                if ( $document['lang'] == 'fr' ) {
+                    $document['locale'] = 'fr_FR';
+                } else if ( $document['lang'] == 'en' ) {
+                    $document['locale'] = 'en_US';
+                }
 
                 if ($destination != null) {
                     $document['slug'] = substr($file->getBasename('.md'), 11);
