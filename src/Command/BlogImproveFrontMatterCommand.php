@@ -27,7 +27,7 @@ class BlogImproveFrontMatterCommand extends Command
         $destination = $input->getArgument('dest');
 
 
-        $re = '/(?P<lang>fr|en)\/(?P<section>citoyen|papa|default)\/(?P<year>[0-9]+)\/\k<year>-(?P<month>[0-9]+)-(?P<day>[0-9]+)-(?P<title>.*)\/\k<year>-\k<month>-\k<day>-\k<title>.md/';
+        $re = '/(?P<lang>fr|en)\/(?P<section>citoyen|papa|web)\/(?P<year>[0-9]+)\/\k<year>-(?P<month>[0-9]+)-(?P<day>[0-9]+)-(?P<title>.*)\/\k<year>-\k<month>-\k<day>-\k<title>.md/';
 
         $finder = new Finder();
         $finder->files()->in($src)->name('*.md');;
@@ -82,7 +82,7 @@ class BlogImproveFrontMatterCommand extends Command
                     $destinationPathTemplate = $destination . '/content/' . $matches['section'] . '/' . $matches['year'] . '/' . $matches['month'] . '/' . substr($file->getBasename('.md'), 11) . '/';
                     $filesDestinationPathTemplate = $destination . '/static/files/' . $matches['year'] . '/' . $matches['month'] . '/' . substr($file->getBasename('.md'), 11) . '/';
 
-                    $urlTemplate = ($matches['section'] == 'default' ? '' : ('/' . $matches['section'])) . '/' . $matches['year'] . '/' . $matches['month'] . '/' . substr($file->getBasename('.md'), 11) . '/';
+                    $urlTemplate = ($matches['section'] == 'web' ? '' : ('/' . $matches['section'])) . '/' . $matches['year'] . '/' . $matches['month'] . '/' . substr($file->getBasename('.md'), 11) . '/';
 
                     $filename = isset($document["i18n-key"]) ? $document["i18n-key"] : 'index';
                     $output->writeln('Writing file to: ' . $destinationPathTemplate . $filename . '.' . $matches['lang'] . '.md');
