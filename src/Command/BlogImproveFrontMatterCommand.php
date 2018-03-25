@@ -43,7 +43,7 @@ class BlogImproveFrontMatterCommand extends Command
             if (count($matches) > 10) {
 
                 // Dump the relative path to the file, omitting the filename
-                $output->writeln('Source file: ' . $file->getRealPath() . ' (' . $file->getBasename('.md') . ')');
+                // $output->writeln('Source file: ' . $file->getRealPath() . ' (' . $file->getBasename('.md') . ')');
 
                 /** @var Document $document */
                 $document = FrontMatter::parse(file_get_contents($file->getRealPath()));
@@ -51,7 +51,7 @@ class BlogImproveFrontMatterCommand extends Command
                 // $output->writeln($matches['section'] . ' ' . $matches['day'] .'/'.$matches['month'].'/'.$matches['year']. ' '. $matches['title']);
 
                 $document['date'] = $matches['year'] . '-' . $matches['month'] . '-' . $matches['day'];
-                $document['publishDate'] = $document['date'];
+                // $document['publishDate'] = array_key_exists('publishDate', $document) ? $document['publishDate'] : $document['date'] ;
                 $document['lang'] = $matches['lang'];
                 $document['type'] = 'post';
                 if ( $document['lang'] == 'fr' ) {
@@ -71,13 +71,32 @@ class BlogImproveFrontMatterCommand extends Command
                         $document['categories'] = array();
                     }
                     $categories = $document['categories'];
-                    $categories[] = $matches['section'];
+                    //$categories[] = $matches['section'];
                     $document['categories'] = array_unique($categories);
                 }
 
                 if ($destination == null) {
-                    $output->writeln('Updating file.');
-                    file_put_contents($file->getRealPath(), FrontMatter::dump($document));
+                    // $output->writeln('Updating file.');
+                    $file_path = $file->getRealPath();
+                    $new_file_path = str_replace( '/' . $matches['section'] . '/', '/' . $document['categories'][0] . '/', $file_path);
+
+                    if($new_file_path!=$file_path){
+
+                        $output->writeln('Moving file.');
+
+                        $new_folder_path = dirname($new_file_path);
+                        if (!file_exists($new_folder_path)) {
+                            $output->writeln('Creating folder: ' . $new_folder_path);
+                            mkdir($new_folder_path, 0777, true);
+                        }
+
+                        unlink($file_path);
+                    } else {
+                        // $output->writeln('Updating file.');
+                    }
+
+                    file_put_contents($new_file_path, FrontMatter::dump($document));
+
                 } else {
                     $destinationPathTemplate = $destination . '/content/' . $matches['section'] . '/' . $matches['year'] . '/' . $matches['month'] . '/' . substr($file->getBasename('.md'), 11) . '/';
                     $filesDestinationPathTemplate = $destination . '/static/files/' . $matches['year'] . '/' . $matches['month'] . '/' . substr($file->getBasename('.md'), 11) . '/';
