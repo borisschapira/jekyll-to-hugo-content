@@ -30,7 +30,9 @@ class BlogImproveFrontMatterCommand extends Command
         $re = '/(?P<lang>fr|en)\/(?P<section>citoyen|papa|web)\/(?P<year>[0-9]+)\/\k<year>-(?P<month>[0-9]+)-(?P<day>[0-9]+)-(?P<title>.*)\/\k<year>-\k<month>-\k<day>-\k<title>.md/';
 
         $finder = new Finder();
-        $finder->files()->in($src)->name('*.md');;
+        $finder->files()->in($src)->name('*.md');
+
+        $index = 0;
 
         /** @var SplFileInfo $file */
         foreach ($finder as $file) {
@@ -43,7 +45,7 @@ class BlogImproveFrontMatterCommand extends Command
             if (count($matches) > 10) {
 
                 // Dump the relative path to the file, omitting the filename
-                // $output->writeln('Source file: ' . $file->getRealPath() . ' (' . $file->getBasename('.md') . ')');
+                $output->writeln(++$index . '. Source file: ' . $file->getRealPath() . ' (' . $file->getBasename('.md') . ')');
 
                 /** @var Document $document */
                 $document = FrontMatter::parse(file_get_contents($file->getRealPath()));
@@ -65,20 +67,38 @@ class BlogImproveFrontMatterCommand extends Command
                     $document['section'] = $matches['section'];
                     $document[$matches['year']] = [$matches['month']];
                 } else {
-                    $document->offsetUnset('section');
-
+                    
                     if (!isset($document['categories'])) {
-                        $document['categories'] = array();
+                        $document['categories'] = [$matches['section']];
                     }
                     $categories = $document['categories'];
                     //$categories[] = $matches['section'];
                     $document['categories'] = array_unique($categories);
+
+                    // $output->writeln($matches['section']);
+
+                    $document->offsetUnset('section');
                 }
 
                 if ($destination == null) {
                     // $output->writeln('Updating file.');
                     $file_path = $file->getRealPath();
                     $new_file_path = str_replace( '/' . $matches['section'] . '/', '/' . $document['categories'][0] . '/', $file_path);
+
+                    if(isset($document['i18n-key'])) {
+                        $new_file_path = str_replace($matches['title'],$document['i18n-key'], $new_file_path);
+                        $output->writeln($new_file_path);
+                    }
+
+                    if (count($document['categories']) == 1 && $document['categories'][0] == $matches['section']) {
+                        $document->offsetUnset('categories');
+                    }
+
+                    if ($document['publishDate'] == $document['date']) {
+                        $document->offsetUnset('publishDate');
+                    }
+
+                    $document->offsetUnset('lang');
 
                     if($new_file_path!=$file_path){
 
@@ -133,7 +153,7 @@ class BlogImproveFrontMatterCommand extends Command
                     }
 
                 }
-                $output->writeln('');
+                // $output->writeln('');
             }
         }
     }
