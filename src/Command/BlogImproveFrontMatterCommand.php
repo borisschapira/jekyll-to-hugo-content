@@ -29,6 +29,12 @@ class BlogImproveFrontMatterCommand extends Command
 
         $re = '/(?P<lang>fr|en)\/(?P<section>citoyen|papa|web)\/(?P<year>[0-9]+)\/\k<year>-(?P<month>[0-9]+)-(?P<day>[0-9]+)-(?P<title>.*)\/\k<year>-\k<month>-\k<day>-\k<title>.md/';
 
+        // For jekyll-locale branch
+        // $re = '/(?P<section>web|dad|citizen)\/_posts\/(?P<year>[0-9]+)\/\k<year>-(?P<month>[0-9]+)-(?P<day>[0-9]+)-(?P<title>.*)\/\k<year>-\k<month>-\k<day>-\k<title>.md/';
+
+        // For _locales only
+        //$re = '/(?P<lang>fr|en|)\'.$re;
+
         $finder = new Finder();
         $finder->files()->in($src)->name('*.md');
 
@@ -78,6 +84,7 @@ class BlogImproveFrontMatterCommand extends Command
                     // $output->writeln($matches['section']);
 
                     $document->offsetUnset('section');
+                    //$document->offsetUnset('locale');
                 }
 
                 if ($destination == null) {
@@ -85,10 +92,30 @@ class BlogImproveFrontMatterCommand extends Command
                     $file_path = $file->getRealPath();
                     $new_file_path = str_replace( '/' . $matches['section'] . '/', '/' . $document['categories'][0] . '/', $file_path);
 
-                    if(isset($document['i18n-key'])) {
-                        $new_file_path = str_replace($matches['title'],$document['i18n-key'], $new_file_path);
-                        $output->writeln($new_file_path);
+                    if(strlen($matches['title']) > 50 ) {
+
+                        if(!isset($document['slug'])) {
+                            $document['slug'] = $matches['title'];
+                        } 
+
+                        $new_file_path = str_replace($matches['title'],mb_substr($matches['title'],0,50),$new_file_path);
                     }
+
+                    // if(isset($document['i18n-key'])) {
+                    //     if(!isset($document['slug'])) {
+                    //         $document['slug'] = $matches['title'];
+                    //     }
+                    //     $new_file_path = str_replace($matches['title'],$document['i18n-key'], $new_file_path);
+                    //     $output->writeln($new_file_path);
+                    // }
+
+                    // if (strpos($new_file_path, '_posts/en/') !== false) {
+                    //     $new_file_path = str_replace("_posts/en/","_locales/en/", $new_file_path);
+                    //     $output->writeln($new_file_path);
+                    // } else if (strpos($new_file_path, '_posts/fr/') !== false) {
+                    //     $new_file_path = str_replace("_posts/fr/","_posts/", $new_file_path);
+                    //     $output->writeln($new_file_path);
+                    // }
 
                     if (count($document['categories']) == 1 && $document['categories'][0] == $matches['section']) {
                         $document->offsetUnset('categories');
